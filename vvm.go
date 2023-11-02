@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"unsafe"
 )
 
@@ -21,10 +21,10 @@ func (v *Voicevox) loadVVMs(modelPath string) (vvms []voicevoxVoiceModel, err er
 		if file.IsDir() {
 			continue
 		}
-		if path.Ext(file.Name()) != ".vvm" {
+		if filepath.Ext(file.Name()) != ".vvm" {
 			continue
 		}
-		fp := path.Join(modelPath, file.Name())
+		fp := filepath.Join(modelPath, file.Name())
 		vvm := voicevoxVoiceModel{}
 		if code := v.voicevoxVoiceModelNewFromPath(fp, uintptr(unsafe.Pointer(&vvm.ptr))); code != VOICEVOX_RESULT_OK {
 			err = fmt.Errorf("%s: %s", fp, v.GetMessageFromResult(code))
