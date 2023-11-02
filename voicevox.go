@@ -6,7 +6,6 @@ import (
 	"unsafe"
 
 	"github.com/aethiopicuschan/nanoda/internal/strings"
-	"github.com/ebitengine/purego"
 )
 
 // 各種関数やポインタなどを保持する構造体
@@ -57,7 +56,7 @@ type Voicevox struct {
 
 // 必要なパスを引数に取り、Voicevoxのインスタンスを生成する
 func NewVoicevox(corePath string, openJtalkPath string, modelPath string) (v *Voicevox, err error) {
-	c, err := purego.Dlopen(corePath, purego.RTLD_NOW|purego.RTLD_GLOBAL)
+	c, err := openLibrary(corePath)
 	if err != nil {
 		return
 	}
