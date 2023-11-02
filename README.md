@@ -33,6 +33,16 @@ io.Copy(f, wav)
 
 その他 `examples` ディレクトリにサンプルコードを置いていますので、ご活用ください。
 
+### 必要なファイルについて
+
+動作には以下のものが必要です。
+
+- コアライブラリ
+- OpenJTalk
+- 音声モデル
+
+[VOICEVOX CORE](https://github.com/VOICEVOX/voicevox_core)のREADMEに従って用意してください。ただし、上述のバージョンに対応するものを利用するようにしてください。
+
 
 ## 開発方針
 
