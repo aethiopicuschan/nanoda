@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen?style=flat-square)](/LICENSE)
 [![Go Reference](https://pkg.go.dev/badge/github.com/aethiopicuschan/nanoda.svg)](https://pkg.go.dev/github.com/aethiopicuschan/nanoda)
+[![Go Report Card](https://goreportcard.com/badge/github.com/aethiopicuschan/nanoda?branch=main)](https://goreportcard.com/report/github.com/aethiopicuschan/nanoda)
 [![CI](https://github.com/aethiopicuschan/nanoda/actions/workflows/ci.yml/badge.svg)](https://github.com/aethiopicuschan/nanoda/actions/workflows/ci.yml)
 
 nanodaは[VOICEVOX CORE](https://github.com/VOICEVOX/voicevox_core)の動的ライブラリをGolangから叩くためのライブラリです。`cgo`ではなく[ebitengine/purego](https://github.com/ebitengine/purego/)を利用しているため、簡単に使用することが可能です。
