@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/aethiopicuschan/nanoda/constant"
 	"github.com/aethiopicuschan/nanoda/internal/strings"
 	"github.com/aethiopicuschan/nanoda/model"
+	"github.com/aethiopicuschan/nanoda/types"
 	"github.com/ebitengine/purego"
 )
 
@@ -20,15 +20,15 @@ type Core struct {
 	// voicevox_audio_query_json_free
 	// voicevox_decode
 	// voicevox_decode_data_free
-	voicevoxErrorResultToMessage func(code constant.ResultCode) string
+	voicevoxErrorResultToMessage func(code types.ResultCode) string
 	// voicevox_finalize
 	voicevoxGetMetasJson func() string
 	// voicevox_get_supported_devices_json
-	voicevoxGetVersion func() string
-	voicevoxInitialize func(uintptr) constant.ResultCode
-	voicevoxIsGpuMode  func() bool
-	// voicevox_is_model_loaded
-	// voicevox_load_model
+	voicevoxGetVersion    func() string
+	voicevoxInitialize    func(uintptr) types.ResultCode
+	voicevoxIsGpuMode     func() bool
+	voicevoxIsModelLoaded func(id uint32) bool
+	voicevoxLoadModel     func(id uint32) types.ResultCode
 	// voicevox_make_default_audio_query_options
 	// voicevox_make_default_initialize_options
 	// voicevox_make_default_synthesis_options
@@ -55,6 +55,8 @@ func NewCore(lib uintptr, openJtalkPath string, accelerationMode int, cpuNumThre
 	purego.RegisterLibFunc(&c.voicevoxGetVersion, lib, "voicevox_get_version")
 	purego.RegisterLibFunc(&c.voicevoxInitialize, lib, "voicevox_initialize")
 	purego.RegisterLibFunc(&c.voicevoxIsGpuMode, lib, "voicevox_is_gpu_mode")
+	purego.RegisterLibFunc(&c.voicevoxIsModelLoaded, lib, "voicevox_is_model_loaded")
+	purego.RegisterLibFunc(&c.voicevoxLoadModel, lib, "voicevox_load_model")
 
 	// 初期化
 	initializeOptions := VoicevoxInitializeOptions{
@@ -64,7 +66,7 @@ func NewCore(lib uintptr, openJtalkPath string, accelerationMode int, cpuNumThre
 		openJtalkDictDir: strings.CString(openJtalkPath),
 	}
 	code := c.voicevoxInitialize(*(*uintptr)(unsafe.Pointer(&initializeOptions)))
-	if code != constant.OK {
+	if code != types.VOICEVOX_RESULT_OK {
 		err = fmt.Errorf(c.voicevoxErrorResultToMessage(code))
 		return
 	}
@@ -72,7 +74,7 @@ func NewCore(lib uintptr, openJtalkPath string, accelerationMode int, cpuNumThre
 	return
 }
 
-func (c *Core) ErrorMessageFrom(code constant.ResultCode) string {
+func (c *Core) ErrorMessageFrom(code types.ResultCode) string {
 	return c.voicevoxErrorResultToMessage(code)
 }
 
@@ -95,4 +97,16 @@ func (c *Core) GetVersion() string {
 
 func (c *Core) IsGpuMode() bool {
 	return c.voicevoxIsGpuMode()
+}
+
+func (c *Core) IsModelLoaded(id int) bool {
+	return c.voicevoxIsModelLoaded(uint32(id))
+}
+
+func (c *Core) LoadModel(id int) (err error) {
+	code := c.voicevoxLoadModel(uint32(id))
+	if code != types.VOICEVOX_RESULT_OK {
+		err = fmt.Errorf(c.voicevoxErrorResultToMessage(code))
+	}
+	return
 }

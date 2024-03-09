@@ -57,3 +57,13 @@ func (v *Voicevox) IsGpuMode() bool {
 func (v *Voicevox) GetMetas() (metas []model.Meta, err error) {
 	return v.core.GetMetas()
 }
+
+// 指定されたモデルが読み込み済みかどうかを取得する
+func (v *Voicevox) IsModelLoaded(id int) bool {
+	return v.core.IsModelLoaded(id)
+}
+
+// 指定されたモデルを読み込む
+func (v *Voicevox) LoadModel(id int) error {
+	return v.core.LoadModel(id)
+}

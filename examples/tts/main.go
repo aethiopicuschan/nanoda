@@ -11,5 +11,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(v.IsGpuMode())
+	log.Println(v.IsModelLoaded(0))
+	v.LoadModel(0)
+	log.Println(v.IsModelLoaded(0))
 }

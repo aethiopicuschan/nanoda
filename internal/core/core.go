@@ -3,18 +3,20 @@ package core
 import (
 	"fmt"
 
-	"github.com/aethiopicuschan/nanoda/constant"
 	core_0_15_0 "github.com/aethiopicuschan/nanoda/internal/core/0.15.0"
 	"github.com/aethiopicuschan/nanoda/internal/core/minimum"
 	"github.com/aethiopicuschan/nanoda/model"
+	"github.com/aethiopicuschan/nanoda/types"
 )
 
 // バージョンに依存しない抽象化されたコアのインターフェース
 type Core interface {
 	GetVersion() string
 	IsGpuMode() bool
-	ErrorMessageFrom(code constant.ResultCode) string
+	ErrorMessageFrom(code types.ResultCode) string
 	GetMetas() (metas []model.Meta, err error)
+	IsModelLoaded(id int) bool
+	LoadModel(id int) error
 }
 
 // オプション
