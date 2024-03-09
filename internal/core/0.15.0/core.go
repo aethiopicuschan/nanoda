@@ -26,7 +26,7 @@ type Core struct {
 	// voicevox_get_supported_devices_json
 	voicevoxGetVersion func() string
 	voicevoxInitialize func(uintptr) constant.ResultCode
-	// voicevox_is_gpu_mode
+	voicevoxIsGpuMode  func() bool
 	// voicevox_is_model_loaded
 	// voicevox_load_model
 	// voicevox_make_default_audio_query_options
@@ -54,6 +54,7 @@ func NewCore(lib uintptr, openJtalkPath string, accelerationMode int, cpuNumThre
 	purego.RegisterLibFunc(&c.voicevoxGetMetasJson, lib, "voicevox_get_metas_json")
 	purego.RegisterLibFunc(&c.voicevoxGetVersion, lib, "voicevox_get_version")
 	purego.RegisterLibFunc(&c.voicevoxInitialize, lib, "voicevox_initialize")
+	purego.RegisterLibFunc(&c.voicevoxIsGpuMode, lib, "voicevox_is_gpu_mode")
 
 	// 初期化
 	initializeOptions := VoicevoxInitializeOptions{
@@ -90,4 +91,8 @@ func (c *Core) GetMetas() (metas []model.Meta, err error) {
 
 func (c *Core) GetVersion() string {
 	return c.voicevoxGetVersion()
+}
+
+func (c *Core) IsGpuMode() bool {
+	return c.voicevoxIsGpuMode()
 }

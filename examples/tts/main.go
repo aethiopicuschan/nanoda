@@ -11,11 +11,5 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	metas, err := v.GetMetas()
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, meta := range metas {
-		log.Println(meta.Name)
-	}
+	log.Println(v.IsGpuMode())
 }

@@ -43,12 +43,17 @@ func NewVoicevox(corePath string, openJtalkPath string, options ...func(*core.Op
 	return
 }
 
-// メタ情報を取得する
-func (v *Voicevox) GetMetas() (metas []model.Meta, err error) {
-	return v.core.GetMetas()
-}
-
 // voicevox coreのバージョンを取得する
 func (v *Voicevox) GetVersion() string {
 	return v.core.GetVersion()
+}
+
+// GPUモードかどうかを取得する
+func (v *Voicevox) IsGpuMode() bool {
+	return v.core.IsGpuMode()
+}
+
+// メタ情報を取得する
+func (v *Voicevox) GetMetas() (metas []model.Meta, err error) {
+	return v.core.GetMetas()
 }
