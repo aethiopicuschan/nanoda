@@ -1,11 +1,13 @@
 package core_0_15_0
 
 import (
+	"encoding/json"
 	"fmt"
 	"unsafe"
 
 	"github.com/aethiopicuschan/nanoda/constant"
 	"github.com/aethiopicuschan/nanoda/internal/strings"
+	"github.com/aethiopicuschan/nanoda/model"
 	"github.com/ebitengine/purego"
 )
 
@@ -20,7 +22,7 @@ type Core struct {
 	// voicevox_decode_data_free
 	voicevoxErrorResultToMessage func(code constant.ResultCode) string
 	// voicevox_finalize
-	// voicevox_get_metas_json
+	voicevoxGetMetasJson func() string
 	// voicevox_get_supported_devices_json
 	voicevoxGetVersion func() string
 	voicevoxInitialize func(uintptr) constant.ResultCode
@@ -49,6 +51,7 @@ func NewCore(lib uintptr, openJtalkPath string, accelerationMode int, cpuNumThre
 
 	// 関数群の紐付け
 	purego.RegisterLibFunc(&c.voicevoxErrorResultToMessage, lib, "voicevox_error_result_to_message")
+	purego.RegisterLibFunc(&c.voicevoxGetMetasJson, lib, "voicevox_get_metas_json")
 	purego.RegisterLibFunc(&c.voicevoxGetVersion, lib, "voicevox_get_version")
 	purego.RegisterLibFunc(&c.voicevoxInitialize, lib, "voicevox_initialize")
 
@@ -70,6 +73,19 @@ func NewCore(lib uintptr, openJtalkPath string, accelerationMode int, cpuNumThre
 
 func (c *Core) ErrorMessageFrom(code constant.ResultCode) string {
 	return c.voicevoxErrorResultToMessage(code)
+}
+
+func (c *Core) GetMetas() (metas []model.Meta, err error) {
+	var localMetas []Meta
+	metasJson := c.voicevoxGetMetasJson()
+	err = json.Unmarshal([]byte(metasJson), &localMetas)
+	if err != nil {
+		return
+	}
+	for _, m := range localMetas {
+		metas = append(metas, m.ToCommon())
+	}
+	return
 }
 
 func (c *Core) GetVersion() string {

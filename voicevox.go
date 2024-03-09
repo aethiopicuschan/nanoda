@@ -2,6 +2,7 @@ package nanoda
 
 import (
 	"github.com/aethiopicuschan/nanoda/internal/core"
+	"github.com/aethiopicuschan/nanoda/model"
 )
 
 type Voicevox struct {
@@ -40,6 +41,11 @@ func NewVoicevox(corePath string, openJtalkPath string, options ...func(*core.Op
 		return
 	}
 	return
+}
+
+// メタ情報を取得する
+func (v *Voicevox) GetMetas() (metas []model.Meta, err error) {
+	return v.core.GetMetas()
 }
 
 // voicevox coreのバージョンを取得する
