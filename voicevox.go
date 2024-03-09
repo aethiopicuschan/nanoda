@@ -1,14 +1,41 @@
 package nanoda
 
-import "github.com/aethiopicuschan/nanoda/internal/core"
+import (
+	"github.com/aethiopicuschan/nanoda/internal/core"
+)
 
 type Voicevox struct {
 	core core.Core
 }
 
-func NewVoicevox(corePath string, openJtalkPath string) (v *Voicevox, err error) {
+// ハードウェアアクセラレーションモードを設定する
+func WithAccelerationMode(mode int) func(*core.Option) {
+	return func(o *core.Option) {
+		o.AccelerationMode = mode
+	}
+}
+
+// CPU利用数を設定する 0の場合は環境に合わせてCPUが利用される
+func WithCpuNumThreads(num int) func(*core.Option) {
+	return func(o *core.Option) {
+		o.CpuNumThreads = num
+	}
+}
+
+func NewVoicevox(corePath string, openJtalkPath string, options ...func(*core.Option)) (v *Voicevox, err error) {
 	v = &Voicevox{}
-	v.core, err = core.NewCore(corePath)
+
+	// デフォルトオプション
+	o := &core.Option{
+		AccelerationMode: ACCELERATION_MODE_AUTO,
+		CpuNumThreads:    0,
+	}
+	// オプションを適用する
+	for _, option := range options {
+		option(o)
+	}
+
+	v.core, err = core.NewCore(corePath, openJtalkPath, o)
 	if err != nil {
 		return
 	}

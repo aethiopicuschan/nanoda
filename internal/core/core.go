@@ -14,25 +14,11 @@ type Core interface {
 }
 
 type Option struct {
-	accelerationMode constant.AccelerationMode
-	cpuNumThreads    int
+	AccelerationMode int
+	CpuNumThreads    int
 }
 
-// ハードウェアアクセラレーションモードを設定する
-func WithAccelerationMode(mode constant.AccelerationMode) func(*Option) {
-	return func(o *Option) {
-		o.accelerationMode = mode
-	}
-}
-
-// CPU利用数を設定する 0の場合は環境に合わせてCPUが利用される
-func WithCpuNumThreads(num int) func(*Option) {
-	return func(o *Option) {
-		o.cpuNumThreads = num
-	}
-}
-
-func NewCore(lib string, options ...func(*Option)) (c Core, err error) {
+func NewCore(lib string, openJtalkPath string, o *Option) (c Core, err error) {
 	// ライブラリを開く
 	l, err := openLibrary(lib)
 	if err != nil {
@@ -46,20 +32,10 @@ func NewCore(lib string, options ...func(*Option)) (c Core, err error) {
 	}
 	version := mc.GetVersion()
 
-	// デフォルトオプション
-	o := &Option{
-		accelerationMode: constant.ACCELERATION_MODE_AUTO,
-		cpuNumThreads:    0,
-	}
-	// オプションを適用する
-	for _, option := range options {
-		option(o)
-	}
-
 	// バージョンによってCoreを選択して返す
 	switch version {
 	case "0.15.0":
-		c, err = core_0_15_0.NewCore(l, o.accelerationMode, o.cpuNumThreads)
+		c, err = core_0_15_0.NewCore(l, openJtalkPath, o.AccelerationMode, o.CpuNumThreads)
 	default:
 		err = fmt.Errorf("unsupported version: %s", version)
 	}
