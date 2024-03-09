@@ -1,6 +1,6 @@
 //go:build windows
 
-package nanoda
+package core
 
 import (
 	"golang.org/x/sys/windows"

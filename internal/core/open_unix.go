@@ -1,6 +1,6 @@
 //go:build darwin || freebsd || linux
 
-package nanoda
+package core
 
 import "github.com/ebitengine/purego"
 
