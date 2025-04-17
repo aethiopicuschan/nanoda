@@ -1,12 +1,12 @@
 //go:build windows
 
-package nanoda
+package open
 
 import (
 	"golang.org/x/sys/windows"
 )
 
-func openLibrary(name string) (uintptr, error) {
+func Open(name string) (uintptr, error) {
 	handle, err := windows.LoadDLL(name)
 	return uintptr(handle.Handle), err
 }
