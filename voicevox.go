@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"unsafe"
 
+	"github.com/aethiopicuschan/nanoda/v2/internal/open"
 	"github.com/aethiopicuschan/nanoda/v2/internal/strings"
 )
 
@@ -56,7 +57,7 @@ type Voicevox struct {
 
 // 必要なパスを引数に取り、Voicevoxのインスタンスを生成する
 func NewVoicevox(corePath string, openJtalkPath string, modelPath string) (v *Voicevox, err error) {
-	c, err := openLibrary(corePath)
+	c, err := open.Open(corePath)
 	if err != nil {
 		return
 	}
