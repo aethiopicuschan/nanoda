@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/aethiopicuschan/nanoda/internal/strings"
+	"github.com/aethiopicuschan/nanoda/v2/internal/strings"
 )
 
 // アクセント句の再生成時に指定するオプション

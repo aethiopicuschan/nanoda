@@ -5,7 +5,7 @@ import (
 	"io"
 	"unsafe"
 
-	"github.com/aethiopicuschan/nanoda/internal/strings"
+	"github.com/aethiopicuschan/nanoda/v2/internal/strings"
 )
 
 // ハードウェアアクセラレーションモードを設定する設定値

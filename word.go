@@ -1,6 +1,6 @@
 package nanoda
 
-import "github.com/aethiopicuschan/nanoda/internal/strings"
+import "github.com/aethiopicuschan/nanoda/v2/internal/strings"
 
 // 内部用の単語
 type innerWord struct {

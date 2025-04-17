@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"unsafe"
 
-	"github.com/aethiopicuschan/nanoda/internal/strings"
+	"github.com/aethiopicuschan/nanoda/v2/internal/strings"
 )
 
 // 音声合成用のクエリ

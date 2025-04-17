@@ -3,7 +3,7 @@ package nanoda
 import (
 	"unsafe"
 
-	"github.com/aethiopicuschan/nanoda/internal/strings"
+	"github.com/aethiopicuschan/nanoda/v2/internal/strings"
 	"github.com/google/uuid"
 )
 

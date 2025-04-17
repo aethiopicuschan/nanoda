@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"unsafe"
 
-	"github.com/aethiopicuschan/nanoda/internal/strings"
+	"github.com/aethiopicuschan/nanoda/v2/internal/strings"
 )
 
 // モーラ（子音＋母音）

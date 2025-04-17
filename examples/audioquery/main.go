@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/aethiopicuschan/nanoda"
+	"github.com/aethiopicuschan/nanoda/v2"
 )
 
 func main() {
