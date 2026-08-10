@@ -32,28 +32,29 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/aethiopicuschan/nanoda/v2/internal/strings"
 	"github.com/ebitengine/purego"
 )
 
 // Core holds the loaded voicevox_core handle and every native function
-// pointer purego resolved from it.
+// pointer purego resolved from it. onnxruntimeFuncs is embedded rather
+// than declared here directly — its shape (which functions exist at all)
+// differs per platform; see onnxruntime_other.go/onnxruntime_ios.go.
 type Core struct {
 	core uintptr
 
-	voicevoxGetVersion                         func() string
-	voicevoxGetOnnxruntimeLibVersionedFilename func() string
-	voicevoxOnnxruntimeLoadOnce                func(uintptr, uintptr) int32
-	voicevoxOpenJtalkRcNew                     func(string, uintptr) int32
-	voicevoxOpenJtalkRcDelete                  func(uintptr)
-	voicevoxSynthesizerNew                     func(uintptr, uintptr, uintptr, uintptr) int32
-	voicevoxSynthesizerDelete                  func(uintptr)
-	voicevoxVoiceModelFileOpen                 func(string, uintptr) int32
-	voicevoxVoiceModelFileDelete               func(uintptr)
-	voicevoxSynthesizerLoadVoiceModel          func(uintptr, uintptr) int32
-	voicevoxSynthesizerTts                     func(uintptr, string, uint32, uintptr, uintptr, uintptr) int32
-	voicevoxWavFree                            func(uintptr)
-	voicevoxErrorResultToMessage               func(int32) string
+	onnxruntimeFuncs
+
+	voicevoxGetVersion                func() string
+	voicevoxOpenJtalkRcNew             func(string, uintptr) int32
+	voicevoxOpenJtalkRcDelete          func(uintptr)
+	voicevoxSynthesizerNew             func(uintptr, uintptr, uintptr, uintptr) int32
+	voicevoxSynthesizerDelete          func(uintptr)
+	voicevoxVoiceModelFileOpen         func(string, uintptr) int32
+	voicevoxVoiceModelFileDelete       func(uintptr)
+	voicevoxSynthesizerLoadVoiceModel  func(uintptr, uintptr) int32
+	voicevoxSynthesizerTts             func(uintptr, string, uint32, uintptr, uintptr, uintptr) int32
+	voicevoxWavFree                    func(uintptr)
+	voicevoxErrorResultToMessage       func(int32) string
 }
 
 // New wires up every function this package needs from the already-loaded
@@ -66,8 +67,7 @@ type Core struct {
 func New(core uintptr) (c *Core) {
 	c = &Core{core: core}
 	purego.RegisterLibFunc(&c.voicevoxGetVersion, c.core, "voicevox_get_version")
-	purego.RegisterLibFunc(&c.voicevoxGetOnnxruntimeLibVersionedFilename, c.core, "voicevox_get_onnxruntime_lib_versioned_filename")
-	purego.RegisterLibFunc(&c.voicevoxOnnxruntimeLoadOnce, c.core, "voicevox_onnxruntime_load_once")
+	c.registerOnnxruntime()
 	purego.RegisterLibFunc(&c.voicevoxOpenJtalkRcNew, c.core, "voicevox_open_jtalk_rc_new")
 	purego.RegisterLibFunc(&c.voicevoxOpenJtalkRcDelete, c.core, "voicevox_open_jtalk_rc_delete")
 	purego.RegisterLibFunc(&c.voicevoxSynthesizerNew, c.core, "voicevox_synthesizer_new")
@@ -102,20 +102,16 @@ type initializeOptions struct {
 }
 
 // NewSynthesizer implements core.Core. It loads ONNX Runtime (once per
-// process; voicevox_onnxruntime_load_once itself is idempotent and
-// ignores the options on any call after the first), builds an Open Jtalk
-// analyzer from openJtalkDicDir, and constructs the native synthesizer
-// with automatic hardware acceleration (mirroring
-// voicevox_make_default_initialize_options' own defaults, which can't be
-// called directly on non-darwin — see the package doc comment).
+// process, via whichever of LOAD/LINK mode this platform's voicevox_core
+// build actually exports — see loadOnnxruntime's platform-specific
+// implementations), builds an Open Jtalk analyzer from openJtalkDicDir,
+// and constructs the native synthesizer with automatic hardware
+// acceleration (mirroring voicevox_make_default_initialize_options' own
+// defaults, which can't be called directly on non-darwin — see the
+// package doc comment).
 func (c *Core) NewSynthesizer(openJtalkDicDir string) (s *Synthesizer, err error) {
-	filename := c.voicevoxGetOnnxruntimeLibVersionedFilename()
-	// VoicevoxLoadOnnxruntimeOptions is just {filename *const char}: 8
-	// bytes, bit-identical to the pointer alone, so no wrapper struct is
-	// needed before the uintptr cast.
-	var onnxruntime uintptr
-	if code := c.voicevoxOnnxruntimeLoadOnce(strings.CString(filename), uintptr(unsafe.Pointer(&onnxruntime))); code != 0 {
-		err = c.newError("onnxruntime_load_once", code)
+	onnxruntime, err := c.loadOnnxruntime()
+	if err != nil {
 		return
 	}
 
