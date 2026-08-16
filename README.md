@@ -9,7 +9,7 @@ nanodaは[VOICEVOX CORE](https://github.com/VOICEVOX/voicevox_core)の動的ラ�
 
 ## VOICEVOXについて
 
-サポートするVOICEVOX COREのバージョンは `0.16` 系(`voicevox_get_version()` が `0.16.` から始まる全パッチバージョン)としており、開発・動作確認は `0.16.4` を元にしています。
+サポートするVOICEVOX COREのバージョンは `0.16` 系・`0.17` 系(`voicevox_get_version()` が `0.16.`/`0.17.` から始まる全パッチバージョン)としており、開発・動作確認は `0.16.4`・`0.17.0` を元にしています。`0.17.0`はビルド・vetレベルでの確認までで、実バイナリでの動作確認は未実施です(0.17.0のC APIは0.16.x とほぼ同一ですが、ONNX Runtimeのファイル名取得関数の改名(`voicevox_get_onnxruntime_lib_versioned_filename` → `..._recommended_versioned_filename`)と`voicevox_synthesizer_load_voice_model`への`options`引数追加の2点が破壊的変更です — `internal/core/core_0_17_0`で吸収済み)。
 
 `0.15` 系のサポートは別系統([`main`ブランチ](https://github.com/aethiopicuschan/nanoda)、モジュールパス `github.com/aethiopicuschan/nanoda`、バージョンサフィックス無し)にあります。この`v2`はAPIの破壊的変更のあるバージョンとしてモジュールパスに`v2`を含みます。
 
@@ -60,12 +60,17 @@ io.Copy(f, wav)
 
 TODOです。ありません。
 
-## 対応状況(0.16.x / このv2ブランチ)
+## 対応状況(0.16.x・0.17.x / このv2ブランチ)
 
-`internal/core/core_0_16_0` が内部的に利用している関数のリストであり、必ずしも一致する形で公開されているわけではありません。テキストからWAVを生成する最小の経路(`New` → `NewSynthesizer` → `LoadVoiceModel`/`LoadAllModels` → `Tts`)にまず対応した段階で、AudioQuery・AccentPhrase・ユーザー辞書・メタ情報取得はまだ未移植です(`0.15`系の実装には存在します)。
+`internal/core/core_0_16_0`・`internal/core/core_0_17_0` が内部的に利用している関数のリストであり、必ずしも一致する形で公開されているわけではありません。テキストからWAVを生成する最小の経路(`New` → `NewSynthesizer` → `LoadVoiceModel`/`LoadAllModels` → `Tts`)にまず対応した段階で、AudioQuery・AccentPhrase・ユーザー辞書・メタ情報取得はまだ未移植です(`0.15`系の実装には存在します)。
+
+`0.17.x`では以下2点がC APIの破壊的変更です(`core_0_17_0`側で吸収済み):
+
+- ONNX Runtimeのファイル名取得関数が`voicevox_get_onnxruntime_lib_versioned_filename`→`voicevox_get_onnxruntime_lib_recommended_versioned_filename`に改名(非iOSのみ。iOSのLINKモード経路は無変更)
+- `voicevox_synthesizer_load_voice_model`に`VoicevoxLoadVoiceModelOptions options`引数が追加(`on_existing`。既定値の`ERROR`固定で渡しており、`0.16.x`までと同じ挙動)
 
 - [x] voicevox_error_result_to_message
-- [x] voicevox_get_onnxruntime_lib_versioned_filename
+- [x] voicevox_get_onnxruntime_lib_versioned_filename(0.16.x)/ voicevox_get_onnxruntime_lib_recommended_versioned_filename(0.17.x)
 - [x] voicevox_get_version
 - [x] voicevox_onnxruntime_load_once
 - [x] voicevox_open_jtalk_rc_new
