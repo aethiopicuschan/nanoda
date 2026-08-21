@@ -9,20 +9,22 @@ nanodaは[VOICEVOX CORE](https://github.com/VOICEVOX/voicevox_core)の動的ラ�
 
 ## VOICEVOXについて
 
-サポートするVOICEVOX COREのバージョンは `0.15` としており、開発は `0.15.0-preview.13` を元にしています。
+サポートするVOICEVOX COREのバージョンは `0.16` 系(`voicevox_get_version()` が `0.16.` から始まる全パッチバージョン)としており、開発・動作確認は `0.16.4` を元にしています。
 
-nanoda自体は[MITライセンス](/LICENSE)ですが、利用に際してはVOICEVOXやOpenJTalkの利用規約に則る必要があることに注意してください。
+`0.15` 系のサポートは別系統([`main`ブランチ](https://github.com/aethiopicuschan/nanoda)、モジュールパス `github.com/aethiopicuschan/nanoda`、バージョンサフィックス無し)にあります。この`v2`はAPIの破壊的変更のあるバージョンとしてモジュールパスに`v2`を含みます。
+
+nanoda自体は[MITライセンス](/LICENSE)ですが、利用に際してはVOICEVOXやOpenJTalkの利用規約に則る必要があることに注意してください。`0.16`以降、ビルド済みのVOICEVOX CORE・VOICEVOX ONNX Runtime本体もMITライセンスになりましたが、音声モデル(VVMファイル)にはキャラクターごとに個別の利用規約があるので、必ず確認してください。
 
 ## 使い方
 
 ```sh
-go get github.com/aethiopicuschan/nanoda@latest
+go get github.com/aethiopicuschan/nanoda/v2@latest
 ```
 
 もっとも簡単な例は以下のようになります。
 
 ```go
-v, _ := nanoda.NewVoicevox("voicevox_core/libvoicevox_core.dylib", "voicevox_core/open_jtalk_dic_utf_8-1.11", "voicevox_core/model")
+v, _ := nanoda.New("voicevox_core.dll", "dict/open_jtalk_dic_utf_8-1.11", "models")
 s, _ := v.NewSynthesizer()
 s.LoadAllModels()
 wav, _ := s.Tts("ずんだもんなのだ！", 3)
@@ -38,11 +40,12 @@ io.Copy(f, wav)
 
 動作には以下のものが必要です。
 
-- コアライブラリ
-- OpenJTalk
-- 音声モデル
+- コアライブラリ(`voicevox_core.dll`/`.so`/`.dylib`)
+- ONNX Runtime(`voicevox_onnxruntime.dll`/`.so`/`.dylib`) — **コアライブラリと同じディレクトリに置いてください。** コアライブラリ内部がファイル名だけでOSの共有ライブラリ検索パスを使ってロードするため、`New`に渡すコアライブラリのパスと別ディレクトリに置くと(Windowsの既定のDLL検索順序ではサブディレクトリまでは辿らないため)見つかりません。`0.15`系には無かった、`0.16`からの要件です。
+- OpenJTalkの辞書ディレクトリ
+- 音声モデル(VVMファイル)
 
-[VOICEVOX CORE](https://github.com/VOICEVOX/voicevox_core)のREADMEに従って用意してください。ただし、上述のバージョンに対応するものを利用するようにしてください。
+[VOICEVOX CORE](https://github.com/VOICEVOX/voicevox_core)のREADMEもしくは同梱のダウンローダーに従って用意してください。ただし、上述のバージョンに対応するものを利用するようにしてください。
 
 
 ## 開発方針
@@ -57,49 +60,34 @@ io.Copy(f, wav)
 
 TODOです。ありません。
 
-## 対応状況
+## 対応状況(0.16.x / このv2ブランチ)
 
-以下は内部的に利用している関数のリストであり、必ずしも一致する形で公開されているわけではありません。
+`internal/core/core_0_16_0` が内部的に利用している関数のリストであり、必ずしも一致する形で公開されているわけではありません。テキストからWAVを生成する最小の経路(`New` → `NewSynthesizer` → `LoadVoiceModel`/`LoadAllModels` → `Tts`)にまず対応した段階で、AudioQuery・AccentPhrase・ユーザー辞書・メタ情報取得はまだ未移植です(`0.15`系の実装には存在します)。
 
-- [x] voicevox_create_supported_devices_json
 - [x] voicevox_error_result_to_message
+- [x] voicevox_get_onnxruntime_lib_versioned_filename
 - [x] voicevox_get_version
-- [x] voicevox_json_free
-- [ ] voicevox_make_default_initialize_options
-- [ ] voicevox_make_default_synthesis_options
-- [ ] voicevox_make_default_tts_options
-- [x] voicevox_open_jtalk_rc_delete
+- [x] voicevox_onnxruntime_load_once
 - [x] voicevox_open_jtalk_rc_new
-- [x] voicevox_open_jtalk_rc_use_user_dict
-- [x] voicevox_synthesizer_create_accent_phrases
-- [x] voicevox_synthesizer_create_accent_phrases_from_kana
-- [x] voicevox_synthesizer_create_audio_query
-- [x] voicevox_synthesizer_create_audio_query_from_kana
-- [x] voicevox_synthesizer_create_metas_json
+- [x] voicevox_open_jtalk_rc_delete
+- [x] voicevox_synthesizer_new
 - [x] voicevox_synthesizer_delete
-- [x] voicevox_synthesizer_is_gpu_mode
-- [x] voicevox_synthesizer_is_loaded_voice_model
 - [x] voicevox_synthesizer_load_voice_model
-- [x] voicevox_synthesizer_new_with_initialize
-- [x] voicevox_synthesizer_replace_mora_data
-- [x] voicevox_synthesizer_replace_mora_pitch
-- [x] voicevox_synthesizer_replace_phoneme_length
-- [x] voicevox_synthesizer_synthesis
 - [x] voicevox_synthesizer_tts
-- [x] voicevox_synthesizer_tts_from_kana
-- [x] voicevox_synthesizer_unload_voice_model
-- [x] voicevox_user_dict_add_word
-- [x] voicevox_user_dict_delete
-- [x] voicevox_user_dict_import
-- [x] voicevox_user_dict_load
-- [x] voicevox_user_dict_new
-- [x] voicevox_user_dict_remove_word
-- [x] voicevox_user_dict_save
-- [x] voicevox_user_dict_to_json
-- [x] voicevox_user_dict_update_word
-- [ ] voicevox_user_dict_word_make
-- [x] voicevox_voice_model_delete
-- [x] voicevox_voice_model_get_metas_json
-- [x] voicevox_voice_model_id
-- [x] voicevox_voice_model_new_from_path
+- [x] voicevox_voice_model_file_open
+- [x] voicevox_voice_model_file_delete
 - [x] voicevox_wav_free
+- [ ] voicevox_json_free (メタ情報などJSONを返す系統に着手したら必要)
+- [ ] voicevox_onnxruntime_create_supported_devices_json
+- [ ] voicevox_synthesizer_create_accent_phrases(_from_kana)
+- [ ] voicevox_synthesizer_create_audio_query(_from_kana)
+- [ ] voicevox_synthesizer_create_metas_json / voicevox_voice_model_file_create_metas_json
+- [ ] voicevox_synthesizer_get_onnxruntime
+- [ ] voicevox_synthesizer_is_gpu_mode
+- [ ] voicevox_synthesizer_is_loaded_voice_model
+- [ ] voicevox_synthesizer_replace_mora_data / replace_mora_pitch / replace_phoneme_length
+- [ ] voicevox_synthesizer_synthesis (AudioQueryからの合成)
+- [ ] voicevox_synthesizer_tts_from_kana
+- [ ] voicevox_synthesizer_unload_voice_model
+- [ ] voicevox_user_dict_*(全般)
+- [ ] 歌唱音声合成系(voicevox_synthesizer_create_sing_frame_*, voicevox_synthesizer_frame_synthesis)
