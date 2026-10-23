@@ -11,21 +11,13 @@
 //
 // voicevox_core.h has several functions that take a small options struct
 // by value (VoicevoxLoadOnnxruntimeOptions, VoicevoxInitializeOptions,
-// VoicevoxTtsOptions). purego only supports passing/returning Go struct
-// values on darwin (see purego's func.go: "struct arguments are only
-// supported on darwin amd64 & arm64") — everywhere else, including
-// Windows and Linux, it panics. Every options struct in this file is
-// therefore small enough (<=8 bytes) to fit in a single register, and is
-// declared here as a plain Go struct purely to document its layout; the
-// actual call always reinterprets it as a uintptr
-// (`*(*uintptr)(unsafe.Pointer(&opts))`) before handing it to the
-// registered func, which purego treats as an ordinary integer argument.
-// This is the same technique nanoda's 0.15 implementation used throughout
-// (see the module's git history), not something new to 0.16.
-//
-// For the same reason, `voicevox_make_default_*_options` functions (which
-// return a struct *by value*) can't be called at all on non-darwin
-// platforms; this package builds sane defaults in Go instead.
+// VoicevoxTtsOptions). Each fits in a single register (<=8 bytes), so it
+// is declared here as a plain Go struct purely to document its layout and
+// reinterpreted as a uintptr (`*(*uintptr)(unsafe.Pointer(&opts))`) at the
+// call, which every ABI passes identically to the struct itself. This
+// predates purego's struct support (darwin only until v0.10/v0.11), and
+// this package builds the `voicevox_make_default_*_options` defaults in Go
+// for the same reason.
 package core_0_16_0
 
 import (
@@ -107,8 +99,7 @@ type initializeOptions struct {
 // implementations), builds an Open Jtalk analyzer from openJtalkDicDir,
 // and constructs the native synthesizer with automatic hardware
 // acceleration (mirroring voicevox_make_default_initialize_options' own
-// defaults, which can't be called directly on non-darwin — see the
-// package doc comment).
+// defaults).
 func (c *Core) NewSynthesizer(openJtalkDicDir string) (s *Synthesizer, err error) {
 	onnxruntime, err := c.loadOnnxruntime()
 	if err != nil {
