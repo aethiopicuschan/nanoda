@@ -39,6 +39,18 @@ type Synthesizer interface {
 	Close()
 }
 
+// StreamingSynthesizer is implemented by Synthesizers whose version may
+// support streaming synthesis. It is separate from Synthesizer because
+// 0.16.x has no such API; a single 0.17.x implementation covers both
+// 0.17.0 (no streaming) and 0.17.1+, hence SupportsStreaming.
+type StreamingSynthesizer interface {
+	Synthesizer
+	SupportsStreaming() bool
+	// TtsStream is Tts, rendered lazily as the returned WAV stream is
+	// read. The stream must be closed before the Synthesizer.
+	TtsStream(text string, styleID uint32) (io.ReadCloser, error)
+}
+
 // core016Adapter adapts *core_0_16_0.Core to the Core interface.
 // core_0_16_0.Core.NewSynthesizer returns its own concrete *Synthesizer
 // type rather than this package's Synthesizer interface (see

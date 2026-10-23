@@ -37,6 +37,8 @@
 //
 //   - voicevox_bytes_free replaces voicevox_wav_free, which still exists
 //     but logs a deprecation warning on every call.
+//   - voicevox_synthesizer_create_audio_feature/voicevox_synthesizer_render
+//     and friends enable streaming synthesis (see stream.go).
 //
 // # Struct arguments
 //
@@ -48,6 +50,11 @@
 // ABI passes identically to the struct itself. This predates purego's
 // struct support (darwin only until v0.10/v0.11) and is kept for
 // consistency with core_0_16_0.
+//
+// VoicevoxAudioFeatureSlice (32 bytes) does not fit in a register, and
+// how such a struct is passed differs per ABI (on the stack on SysV
+// amd64, by reference on Windows and AAPCS64), so it is passed as a real
+// Go struct and purego lays it out per platform.
 package core_0_17_0
 
 import (
@@ -81,6 +88,24 @@ type Core struct {
 	// bytesFree is voicevox_bytes_free on 0.17.1+ and voicevox_wav_free
 	// before it.
 	bytesFree func(uintptr)
+
+	streamingFuncs
+}
+
+// streamingFuncs are the 0.17.1+ functions streaming synthesis needs.
+// They are registered only when the library exports
+// voicevox_synthesizer_render; otherwise every field stays nil and
+// supportsStreaming is false.
+type streamingFuncs struct {
+	supportsStreaming bool
+
+	voicevoxSynthesizerCreateAudioQuery   func(uintptr, string, uint32, uintptr) int32
+	voicevoxStringFree                    func(uintptr)
+	voicevoxSynthesizerCreateAudioFeature func(uintptr, string, uint32, uintptr, uintptr) int32
+	voicevoxAudioFeatureLen               func(uintptr) uintptr
+	voicevoxAudioFeatureSlice             func(uintptr, uintptr, uintptr, bool, bool, bool, uintptr) int32
+	voicevoxSynthesizerRender             func(uintptr, audioFeatureSlice, uintptr, uintptr) int32
+	voicevoxAudioFeatureDelete            func(uintptr)
 }
 
 // New wires up every function this package needs from the already-loaded
@@ -108,7 +133,21 @@ func New(core uintptr) (c *Core) {
 	} else {
 		purego.RegisterLibFunc(&c.bytesFree, c.core, "voicevox_wav_free")
 	}
+	if open.HasSymbol(c.core, "voicevox_synthesizer_render") {
+		c.registerStreaming()
+	}
 	return
+}
+
+func (c *Core) registerStreaming() {
+	purego.RegisterLibFunc(&c.voicevoxSynthesizerCreateAudioQuery, c.core, "voicevox_synthesizer_create_audio_query")
+	purego.RegisterLibFunc(&c.voicevoxStringFree, c.core, "voicevox_string_free")
+	purego.RegisterLibFunc(&c.voicevoxSynthesizerCreateAudioFeature, c.core, "voicevox_synthesizer_create_audio_feature")
+	purego.RegisterLibFunc(&c.voicevoxAudioFeatureLen, c.core, "voicevox_audio_feature_len")
+	purego.RegisterLibFunc(&c.voicevoxAudioFeatureSlice, c.core, "voicevox_audio_feature_slice")
+	purego.RegisterLibFunc(&c.voicevoxSynthesizerRender, c.core, "voicevox_synthesizer_render")
+	purego.RegisterLibFunc(&c.voicevoxAudioFeatureDelete, c.core, "voicevox_audio_feature_delete")
+	c.supportsStreaming = true
 }
 
 func (c *Core) GetVersion() string {
