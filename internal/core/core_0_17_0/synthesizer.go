@@ -75,7 +75,7 @@ func (s *Synthesizer) Tts(text string, styleID uint32) (io.ReadCloser, error) {
 	}
 	raw := unsafe.Slice(wavPtr, wavLen)
 	return newWav(raw, func() error {
-		s.c.voicevoxWavFree(uintptr(unsafe.Pointer(wavPtr)))
+		s.c.bytesFree(uintptr(unsafe.Pointer(wavPtr)))
 		return nil
 	}), nil
 }

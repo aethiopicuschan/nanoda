@@ -29,6 +29,15 @@
 // VoicevoxTtsOptions, voicevox_synthesizer_tts's own signature, every other
 // function name below) is byte-for-byte identical to 0.16.x.
 //
+// # 0.17.1 additions
+//
+// 0.17.1 only adds to the C API, so it is handled here rather than in a
+// separate package. Its additions are probed with open.HasSymbol and
+// registered only when present (see New):
+//
+//   - voicevox_bytes_free replaces voicevox_wav_free, which still exists
+//     but logs a deprecation warning on every call.
+//
 // # Struct arguments
 //
 // voicevox_core.h has several functions that take a small options struct
@@ -45,6 +54,7 @@ import (
 	"fmt"
 	"unsafe"
 
+	"github.com/aethiopicuschan/nanoda/v2/internal/open"
 	"github.com/ebitengine/purego"
 )
 
@@ -66,8 +76,11 @@ type Core struct {
 	voicevoxVoiceModelFileDelete      func(uintptr)
 	voicevoxSynthesizerLoadVoiceModel func(uintptr, uintptr, uintptr) int32
 	voicevoxSynthesizerTts            func(uintptr, string, uint32, uintptr, uintptr, uintptr) int32
-	voicevoxWavFree                   func(uintptr)
 	voicevoxErrorResultToMessage      func(int32) string
+
+	// bytesFree is voicevox_bytes_free on 0.17.1+ and voicevox_wav_free
+	// before it.
+	bytesFree func(uintptr)
 }
 
 // New wires up every function this package needs from the already-loaded
@@ -89,8 +102,12 @@ func New(core uintptr) (c *Core) {
 	purego.RegisterLibFunc(&c.voicevoxVoiceModelFileDelete, c.core, "voicevox_voice_model_file_delete")
 	purego.RegisterLibFunc(&c.voicevoxSynthesizerLoadVoiceModel, c.core, "voicevox_synthesizer_load_voice_model")
 	purego.RegisterLibFunc(&c.voicevoxSynthesizerTts, c.core, "voicevox_synthesizer_tts")
-	purego.RegisterLibFunc(&c.voicevoxWavFree, c.core, "voicevox_wav_free")
 	purego.RegisterLibFunc(&c.voicevoxErrorResultToMessage, c.core, "voicevox_error_result_to_message")
+	if open.HasSymbol(c.core, "voicevox_bytes_free") {
+		purego.RegisterLibFunc(&c.bytesFree, c.core, "voicevox_bytes_free")
+	} else {
+		purego.RegisterLibFunc(&c.bytesFree, c.core, "voicevox_wav_free")
+	}
 	return
 }
 

@@ -81,7 +81,7 @@ TODOです。ありません。
 - [x] voicevox_synthesizer_tts
 - [x] voicevox_voice_model_file_open
 - [x] voicevox_voice_model_file_delete
-- [x] voicevox_wav_free
+- [x] voicevox_wav_free(0.17.0まで)/ voicevox_bytes_free(0.17.1以降)
 - [ ] voicevox_json_free (メタ情報などJSONを返す系統に着手したら必要)
 - [ ] voicevox_onnxruntime_create_supported_devices_json
 - [ ] voicevox_synthesizer_create_accent_phrases(_from_kana)
