@@ -53,7 +53,7 @@ func (s *Synthesizer) TtsStream(text string, styleID uint32) (io.ReadCloser, err
 	}
 
 	var queryPtr *byte
-	if code := s.c.voicevoxSynthesizerCreateAudioQuery(s.synthesizer, text, styleID, uintptr(unsafe.Pointer(&queryPtr))); code != 0 {
+	if code := s.c.voicevoxSynthesizerCreateAudioQuery(s.synthesizer, text, styleID, &queryPtr); code != 0 {
 		return nil, s.c.newError("synthesizer_create_audio_query", code)
 	}
 	defer s.c.voicevoxStringFree(uintptr(unsafe.Pointer(queryPtr)))
@@ -72,7 +72,7 @@ func (s *Synthesizer) TtsStream(text string, styleID uint32) (io.ReadCloser, err
 	// Same as Tts, so both produce identical audio for the same input.
 	opts := synthesisOptions{enableInterrogativeUpspeak: false}
 	var feature uintptr
-	if code := s.c.voicevoxSynthesizerCreateAudioFeature(s.synthesizer, query, styleID, *(*uintptr)(unsafe.Pointer(&opts)), uintptr(unsafe.Pointer(&feature))); code != 0 {
+	if code := s.c.voicevoxSynthesizerCreateAudioFeature(s.synthesizer, query, styleID, *(*uintptr)(unsafe.Pointer(&opts)), &feature); code != 0 {
 		return nil, s.c.newError("synthesizer_create_audio_feature", code)
 	}
 	frames := s.c.voicevoxAudioFeatureLen(feature)
@@ -147,12 +147,12 @@ func (st *stream) renderNext() error {
 	c := st.s.c
 	end := min(st.cursor+segmentFrames, st.frames)
 	var slice audioFeatureSlice
-	if code := c.voicevoxAudioFeatureSlice(st.feature, st.cursor, end, false, false, false, uintptr(unsafe.Pointer(&slice))); code != 0 {
+	if code := c.voicevoxAudioFeatureSlice(st.feature, st.cursor, end, false, false, false, &slice); code != 0 {
 		return c.newError("audio_feature_slice", code)
 	}
 	var pcmLen uintptr
 	var pcmPtr *byte
-	if code := c.voicevoxSynthesizerRender(st.s.synthesizer, slice, uintptr(unsafe.Pointer(&pcmLen)), uintptr(unsafe.Pointer(&pcmPtr))); code != 0 {
+	if code := c.voicevoxSynthesizerRender(st.s.synthesizer, slice, &pcmLen, &pcmPtr); code != 0 {
 		return c.newError("synthesizer_render", code)
 	}
 	st.cursor = end

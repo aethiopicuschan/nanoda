@@ -40,6 +40,16 @@
 //   - voicevox_synthesizer_create_audio_feature/voicevox_synthesizer_render
 //     and friends enable streaming synthesis (see stream.go).
 //
+// # Output parameters
+//
+// Output parameters are declared as typed pointers (*uintptr, **byte, ...)
+// and passed as &local, never as uintptr(unsafe.Pointer(&local)). A
+// uintptr hides the pointer from the compiler, so local stays on the
+// goroutine stack; if that stack grows inside purego's Go-side call path,
+// it is copied elsewhere and the library writes into the stale copy,
+// leaving local zero (reliably on a fresh goroutine's first call). Passing
+// a typed pointer to a func value makes local escape to the heap instead.
+//
 // # Struct arguments
 //
 // voicevox_core.h has several functions that take a small options struct
@@ -75,14 +85,14 @@ type Core struct {
 	onnxruntimeFuncs
 
 	voicevoxGetVersion                func() string
-	voicevoxOpenJtalkRcNew            func(string, uintptr) int32
+	voicevoxOpenJtalkRcNew            func(string, *uintptr) int32
 	voicevoxOpenJtalkRcDelete         func(uintptr)
-	voicevoxSynthesizerNew            func(uintptr, uintptr, uintptr, uintptr) int32
+	voicevoxSynthesizerNew            func(uintptr, uintptr, uintptr, *uintptr) int32
 	voicevoxSynthesizerDelete         func(uintptr)
-	voicevoxVoiceModelFileOpen        func(string, uintptr) int32
+	voicevoxVoiceModelFileOpen        func(string, *uintptr) int32
 	voicevoxVoiceModelFileDelete      func(uintptr)
 	voicevoxSynthesizerLoadVoiceModel func(uintptr, uintptr, uintptr) int32
-	voicevoxSynthesizerTts            func(uintptr, string, uint32, uintptr, uintptr, uintptr) int32
+	voicevoxSynthesizerTts            func(uintptr, string, uint32, uintptr, *uintptr, **byte) int32
 	voicevoxErrorResultToMessage      func(int32) string
 
 	// bytesFree is voicevox_bytes_free on 0.17.1+ and voicevox_wav_free
@@ -99,12 +109,12 @@ type Core struct {
 type streamingFuncs struct {
 	supportsStreaming bool
 
-	voicevoxSynthesizerCreateAudioQuery   func(uintptr, string, uint32, uintptr) int32
+	voicevoxSynthesizerCreateAudioQuery   func(uintptr, string, uint32, **byte) int32
 	voicevoxStringFree                    func(uintptr)
-	voicevoxSynthesizerCreateAudioFeature func(uintptr, string, uint32, uintptr, uintptr) int32
+	voicevoxSynthesizerCreateAudioFeature func(uintptr, string, uint32, uintptr, *uintptr) int32
 	voicevoxAudioFeatureLen               func(uintptr) uintptr
-	voicevoxAudioFeatureSlice             func(uintptr, uintptr, uintptr, bool, bool, bool, uintptr) int32
-	voicevoxSynthesizerRender             func(uintptr, audioFeatureSlice, uintptr, uintptr) int32
+	voicevoxAudioFeatureSlice             func(uintptr, uintptr, uintptr, bool, bool, bool, *audioFeatureSlice) int32
+	voicevoxSynthesizerRender             func(uintptr, audioFeatureSlice, *uintptr, **byte) int32
 	voicevoxAudioFeatureDelete            func(uintptr)
 }
 
@@ -185,14 +195,14 @@ func (c *Core) NewSynthesizer(openJtalkDicDir string) (s *Synthesizer, err error
 	}
 
 	var openJtalk uintptr
-	if code := c.voicevoxOpenJtalkRcNew(openJtalkDicDir, uintptr(unsafe.Pointer(&openJtalk))); code != 0 {
+	if code := c.voicevoxOpenJtalkRcNew(openJtalkDicDir, &openJtalk); code != 0 {
 		err = c.newError("open_jtalk_rc_new", code)
 		return
 	}
 
 	opts := initializeOptions{accelerationMode: 0, cpuNumThreads: 0}
 	var synthesizer uintptr
-	code := c.voicevoxSynthesizerNew(onnxruntime, openJtalk, *(*uintptr)(unsafe.Pointer(&opts)), uintptr(unsafe.Pointer(&synthesizer)))
+	code := c.voicevoxSynthesizerNew(onnxruntime, openJtalk, *(*uintptr)(unsafe.Pointer(&opts)), &synthesizer)
 	if code != 0 {
 		c.voicevoxOpenJtalkRcDelete(openJtalk)
 		err = c.newError("synthesizer_new", code)

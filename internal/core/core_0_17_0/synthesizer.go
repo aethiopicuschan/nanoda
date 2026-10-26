@@ -39,7 +39,7 @@ type loadVoiceModelOptions struct {
 // than something that needs to outlive the load.
 func (s *Synthesizer) LoadVoiceModel(vvmPath string) error {
 	var model uintptr
-	if code := s.c.voicevoxVoiceModelFileOpen(vvmPath, uintptr(unsafe.Pointer(&model))); code != 0 {
+	if code := s.c.voicevoxVoiceModelFileOpen(vvmPath, &model); code != 0 {
 		return s.c.newError("voice_model_file_open: "+vvmPath, code)
 	}
 	defer s.c.voicevoxVoiceModelFileDelete(model)
@@ -62,14 +62,8 @@ type ttsOptions struct {
 func (s *Synthesizer) Tts(text string, styleID uint32) (io.ReadCloser, error) {
 	opts := ttsOptions{enableInterrogativeUpspeak: false}
 	var wavLen uintptr
-	// wavPtr is deliberately a real *byte, not a uintptr: that lets the
-	// slice below read it directly (unsafe.Slice(wavPtr, wavLen)) instead
-	// of round-tripping through unsafe.Pointer(uintptr), which go vet
-	// flags as a possible misuse (it can't verify a uintptr obtained from
-	// C still denotes a live pointer). Passing &wavPtr to the C call
-	// converts pointer->uintptr, the direction vet doesn't flag.
 	var wavPtr *byte
-	code := s.c.voicevoxSynthesizerTts(s.synthesizer, text, styleID, *(*uintptr)(unsafe.Pointer(&opts)), uintptr(unsafe.Pointer(&wavLen)), uintptr(unsafe.Pointer(&wavPtr)))
+	code := s.c.voicevoxSynthesizerTts(s.synthesizer, text, styleID, *(*uintptr)(unsafe.Pointer(&opts)), &wavLen, &wavPtr)
 	if code != 0 {
 		return nil, s.c.newError("synthesizer_tts", code)
 	}

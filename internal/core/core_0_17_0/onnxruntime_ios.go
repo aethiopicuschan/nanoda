@@ -3,8 +3,6 @@
 package core_0_17_0
 
 import (
-	"unsafe"
-
 	"github.com/ebitengine/purego"
 )
 
@@ -21,7 +19,7 @@ import (
 // and its own doc comment for how this split was confirmed against the
 // real bundled header.
 type onnxruntimeFuncs struct {
-	voicevoxOnnxruntimeInitOnce func(uintptr) int32
+	voicevoxOnnxruntimeInitOnce func(*uintptr) int32
 }
 
 func (c *Core) registerOnnxruntime() {
@@ -33,7 +31,7 @@ func (c *Core) registerOnnxruntime() {
 // against (idempotent, like the LOAD-mode side's *_load_once).
 func (c *Core) loadOnnxruntime() (uintptr, error) {
 	var onnxruntime uintptr
-	if code := c.voicevoxOnnxruntimeInitOnce(uintptr(unsafe.Pointer(&onnxruntime))); code != 0 {
+	if code := c.voicevoxOnnxruntimeInitOnce(&onnxruntime); code != 0 {
 		return 0, c.newError("onnxruntime_init_once", code)
 	}
 	return onnxruntime, nil

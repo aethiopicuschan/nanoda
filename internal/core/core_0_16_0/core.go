@@ -7,6 +7,12 @@
 // call goes through purego (RegisterLibFunc), never cgo — see nanoda's own
 // README for why.
 //
+// # Output parameters
+//
+// Output parameters are typed pointers passed as &local, never
+// uintptr(unsafe.Pointer(&local)); see core_0_17_0's package doc comment
+// for why.
+//
 // # Struct arguments
 //
 // voicevox_core.h has several functions that take a small options struct
@@ -37,16 +43,16 @@ type Core struct {
 	onnxruntimeFuncs
 
 	voicevoxGetVersion                func() string
-	voicevoxOpenJtalkRcNew             func(string, uintptr) int32
-	voicevoxOpenJtalkRcDelete          func(uintptr)
-	voicevoxSynthesizerNew             func(uintptr, uintptr, uintptr, uintptr) int32
-	voicevoxSynthesizerDelete          func(uintptr)
-	voicevoxVoiceModelFileOpen         func(string, uintptr) int32
-	voicevoxVoiceModelFileDelete       func(uintptr)
-	voicevoxSynthesizerLoadVoiceModel  func(uintptr, uintptr) int32
-	voicevoxSynthesizerTts             func(uintptr, string, uint32, uintptr, uintptr, uintptr) int32
-	voicevoxWavFree                    func(uintptr)
-	voicevoxErrorResultToMessage       func(int32) string
+	voicevoxOpenJtalkRcNew            func(string, *uintptr) int32
+	voicevoxOpenJtalkRcDelete         func(uintptr)
+	voicevoxSynthesizerNew            func(uintptr, uintptr, uintptr, *uintptr) int32
+	voicevoxSynthesizerDelete         func(uintptr)
+	voicevoxVoiceModelFileOpen        func(string, *uintptr) int32
+	voicevoxVoiceModelFileDelete      func(uintptr)
+	voicevoxSynthesizerLoadVoiceModel func(uintptr, uintptr) int32
+	voicevoxSynthesizerTts            func(uintptr, string, uint32, uintptr, *uintptr, **byte) int32
+	voicevoxWavFree                   func(uintptr)
+	voicevoxErrorResultToMessage      func(int32) string
 }
 
 // New wires up every function this package needs from the already-loaded
@@ -107,14 +113,14 @@ func (c *Core) NewSynthesizer(openJtalkDicDir string) (s *Synthesizer, err error
 	}
 
 	var openJtalk uintptr
-	if code := c.voicevoxOpenJtalkRcNew(openJtalkDicDir, uintptr(unsafe.Pointer(&openJtalk))); code != 0 {
+	if code := c.voicevoxOpenJtalkRcNew(openJtalkDicDir, &openJtalk); code != 0 {
 		err = c.newError("open_jtalk_rc_new", code)
 		return
 	}
 
 	opts := initializeOptions{accelerationMode: 0, cpuNumThreads: 0}
 	var synthesizer uintptr
-	code := c.voicevoxSynthesizerNew(onnxruntime, openJtalk, *(*uintptr)(unsafe.Pointer(&opts)), uintptr(unsafe.Pointer(&synthesizer)))
+	code := c.voicevoxSynthesizerNew(onnxruntime, openJtalk, *(*uintptr)(unsafe.Pointer(&opts)), &synthesizer)
 	if code != 0 {
 		c.voicevoxOpenJtalkRcDelete(openJtalk)
 		err = c.newError("synthesizer_new", code)
