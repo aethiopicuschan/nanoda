@@ -22,6 +22,8 @@ const (
 // audioFeatureSlice mirrors VoicevoxAudioFeatureSlice. Unlike the options
 // structs it is passed to the registered func as a real struct; see the
 // package doc comment.
+//
+//lint:ignore U1000 the fields are only written by voicevox_audio_feature_slice and read by voicevox_synthesizer_render.
 type audioFeatureSlice struct {
 	audioFeature         uintptr
 	startOffset          uintptr
