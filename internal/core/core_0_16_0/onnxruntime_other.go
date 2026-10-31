@@ -3,9 +3,6 @@
 package core_0_16_0
 
 import (
-	"unsafe"
-
-	"github.com/aethiopicuschan/nanoda/v2/internal/strings"
 	"github.com/ebitengine/purego"
 )
 
@@ -20,7 +17,7 @@ import (
 // in voicevox_core-ios-xcframework-cpu-0.16.4's own Headers/voicevox_core.h.
 type onnxruntimeFuncs struct {
 	voicevoxGetOnnxruntimeLibVersionedFilename func() string
-	voicevoxOnnxruntimeLoadOnce                func(uintptr, uintptr) int32
+	voicevoxOnnxruntimeLoadOnce                func(*byte, *uintptr) int32
 }
 
 func (c *Core) registerOnnxruntime() {
@@ -34,12 +31,12 @@ func (c *Core) registerOnnxruntime() {
 // the options on any call after the first).
 func (c *Core) loadOnnxruntime() (uintptr, error) {
 	filename := c.voicevoxGetOnnxruntimeLibVersionedFilename()
-	// VoicevoxLoadOnnxruntimeOptions is just {filename *const char}: 8
-	// bytes, bit-identical to the pointer alone, so no wrapper struct is
-	// needed before the uintptr cast (see core.go's package doc comment on
-	// why options structs are passed this way).
+	// VoicevoxLoadOnnxruntimeOptions is just {filename *const char}, which
+	// every ABI passes exactly like the pointer alone. The library only
+	// reads it during the call.
+	cFilename := append([]byte(filename), 0)
 	var onnxruntime uintptr
-	if code := c.voicevoxOnnxruntimeLoadOnce(strings.CString(filename), uintptr(unsafe.Pointer(&onnxruntime))); code != 0 {
+	if code := c.voicevoxOnnxruntimeLoadOnce(&cFilename[0], &onnxruntime); code != 0 {
 		return 0, c.newError("onnxruntime_load_once", code)
 	}
 	return onnxruntime, nil

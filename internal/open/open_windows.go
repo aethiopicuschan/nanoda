@@ -17,3 +17,11 @@ func Open(name string) (uintptr, error) {
 	}
 	return uintptr(handle.Handle), nil
 }
+
+// HasSymbol reports whether lib exports name. purego.RegisterLibFunc
+// panics on a missing symbol, so optional functions added in a patch
+// release must be probed with this first.
+func HasSymbol(lib uintptr, name string) bool {
+	_, err := windows.GetProcAddress(windows.Handle(lib), name)
+	return err == nil
+}

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/aethiopicuschan/nanoda/v2/internal/core/core_0_16_0"
+	"github.com/aethiopicuschan/nanoda/v2/internal/core/core_0_17_0"
 	"github.com/aethiopicuschan/nanoda/v2/internal/core/minimum"
 )
 
@@ -38,6 +39,18 @@ type Synthesizer interface {
 	Close()
 }
 
+// StreamingSynthesizer is implemented by Synthesizers whose version may
+// support streaming synthesis. It is separate from Synthesizer because
+// 0.16.x has no such API; a single 0.17.x implementation covers both
+// 0.17.0 (no streaming) and 0.17.1+, hence SupportsStreaming.
+type StreamingSynthesizer interface {
+	Synthesizer
+	SupportsStreaming() bool
+	// TtsStream is Tts, rendered lazily as the returned WAV stream is
+	// read. The stream must be closed before the Synthesizer.
+	TtsStream(text string, styleID uint32) (io.ReadCloser, error)
+}
+
 // core016Adapter adapts *core_0_16_0.Core to the Core interface.
 // core_0_16_0.Core.NewSynthesizer returns its own concrete *Synthesizer
 // type rather than this package's Synthesizer interface (see
@@ -56,18 +69,33 @@ func (a core016Adapter) NewSynthesizer(openJtalkDicDir string) (Synthesizer, err
 	return a.Core.NewSynthesizer(openJtalkDicDir)
 }
 
+// core017Adapter adapts *core_0_17_0.Core to the Core interface — the
+// 0.17.x counterpart of core016Adapter above; see that type's doc comment
+// for why this thin wrapper exists at all (the import-cycle constraint
+// applies identically here).
+type core017Adapter struct {
+	*core_0_17_0.Core
+}
+
+func (a core017Adapter) NewSynthesizer(openJtalkDicDir string) (Synthesizer, error) {
+	return a.Core.NewSynthesizer(openJtalkDicDir)
+}
+
 // New picks the internal/core/core_x_y_z implementation matching the
 // library's own reported version, or returns nil if none matches.
 //
 // The match is against the version's "X.Y" prefix, not an exact string:
 // voicevox_get_version() returns the full release (e.g. "0.16.4"), and a
-// single core_0_16_0 implementation is expected to handle every 0.16.x
-// patch release, not just one exact one.
+// single core_0_16_0/core_0_17_0 implementation is expected to handle
+// every patch release within its minor version, not just one exact one.
 func New(core uintptr) (c Core) {
 	mc := minimum.New(core)
 	switch {
 	case strings.HasPrefix(mc.GetVersion(), "0.16."):
 		c = core016Adapter{core_0_16_0.New(core)}
+		return
+	case strings.HasPrefix(mc.GetVersion(), "0.17."):
+		c = core017Adapter{core_0_17_0.New(core)}
 		return
 	}
 	return

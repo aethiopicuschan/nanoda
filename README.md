@@ -9,7 +9,9 @@ nanodaは[VOICEVOX CORE](https://github.com/VOICEVOX/voicevox_core)の動的ラ�
 
 ## VOICEVOXについて
 
-サポートするVOICEVOX COREのバージョンは `0.16` 系(`voicevox_get_version()` が `0.16.` から始まる全パッチバージョン)としており、開発・動作確認は `0.16.4` を元にしています。
+サポートするVOICEVOX COREのバージョンは `0.16` 系・`0.17` 系(`voicevox_get_version()` が `0.16.`/`0.17.` から始まる全パッチバージョン)としており、開発・動作確認は `0.16.4`・`0.17.0`・`0.17.1` を元にしています(0.17.0のC APIは0.16.x とほぼ同一ですが、ONNX Runtimeのファイル名取得関数の改名(`voicevox_get_onnxruntime_lib_versioned_filename` → `..._recommended_versioned_filename`)と`voicevox_synthesizer_load_voice_model`への`options`引数追加の2点が破壊的変更です — `internal/core/core_0_17_0`で吸収済み)。
+
+ストリーミング音声合成(`TtsStream`)は `0.17.1` 以降かつVVMフォーマットバージョン2の音声モデルでのみ利用できます。それより前のバージョンでは `ErrStreamingUnsupported` を返します。
 
 `0.15` 系のサポートは別系統([`main`ブランチ](https://github.com/aethiopicuschan/nanoda)、モジュールパス `github.com/aethiopicuschan/nanoda`、バージョンサフィックス無し)にあります。この`v2`はAPIの破壊的変更のあるバージョンとしてモジュールパスに`v2`を含みます。
 
@@ -32,6 +34,17 @@ defer wav.Close()
 f, _ := os.Create("output.wav")
 defer f.Close()
 io.Copy(f, wav)
+```
+
+`TtsStream` を使うと、合成を少しずつ(約0.3秒ずつ)進めながら読み出せるため、全体の合成を待たずに再生を始められます。返されるストリームはWAVヘッダの後にPCMが続く形式で、`Synthesizer` を `Close` する前に `Close` してください。
+
+```go
+stream, err := s.TtsStream("ずんだもんなのだ！", 3)
+if errors.Is(err, nanoda.ErrStreamingUnsupported) {
+	// 0.17.1より前のVOICEVOX CORE
+}
+defer stream.Close()
+io.Copy(player, stream)
 ```
 
 その他 `examples` ディレクトリにサンプルコードを置いていますので、ご活用ください。
@@ -60,12 +73,17 @@ io.Copy(f, wav)
 
 TODOです。ありません。
 
-## 対応状況(0.16.x / このv2ブランチ)
+## 対応状況(0.16.x・0.17.x / このv2ブランチ)
 
-`internal/core/core_0_16_0` が内部的に利用している関数のリストであり、必ずしも一致する形で公開されているわけではありません。テキストからWAVを生成する最小の経路(`New` → `NewSynthesizer` → `LoadVoiceModel`/`LoadAllModels` → `Tts`)にまず対応した段階で、AudioQuery・AccentPhrase・ユーザー辞書・メタ情報取得はまだ未移植です(`0.15`系の実装には存在します)。
+`internal/core/core_0_16_0`・`internal/core/core_0_17_0` が内部的に利用している関数のリストであり、必ずしも一致する形で公開されているわけではありません。テキストからWAVを生成する最小の経路(`New` → `NewSynthesizer` → `LoadVoiceModel`/`LoadAllModels` → `Tts`)にまず対応した段階で、AudioQuery・AccentPhrase・ユーザー辞書・メタ情報取得はまだ未移植です(`0.15`系の実装には存在します)。
+
+`0.17.x`では以下2点がC APIの破壊的変更です(`core_0_17_0`側で吸収済み):
+
+- ONNX Runtimeのファイル名取得関数が`voicevox_get_onnxruntime_lib_versioned_filename`→`voicevox_get_onnxruntime_lib_recommended_versioned_filename`に改名(非iOSのみ。iOSのLINKモード経路は無変更)
+- `voicevox_synthesizer_load_voice_model`に`VoicevoxLoadVoiceModelOptions options`引数が追加(`on_existing`。既定値の`ERROR`固定で渡しており、`0.16.x`までと同じ挙動)
 
 - [x] voicevox_error_result_to_message
-- [x] voicevox_get_onnxruntime_lib_versioned_filename
+- [x] voicevox_get_onnxruntime_lib_versioned_filename(0.16.x)/ voicevox_get_onnxruntime_lib_recommended_versioned_filename(0.17.x)
 - [x] voicevox_get_version
 - [x] voicevox_onnxruntime_load_once
 - [x] voicevox_open_jtalk_rc_new
@@ -76,11 +94,18 @@ TODOです。ありません。
 - [x] voicevox_synthesizer_tts
 - [x] voicevox_voice_model_file_open
 - [x] voicevox_voice_model_file_delete
-- [x] voicevox_wav_free
-- [ ] voicevox_json_free (メタ情報などJSONを返す系統に着手したら必要)
+- [x] voicevox_wav_free(0.17.0まで)/ voicevox_bytes_free(0.17.1以降)
+- [x] voicevox_string_free(0.17.1以降。ストリーミング音声合成でのみ利用)
+- [x] voicevox_synthesizer_create_audio_query(0.17.1以降。ストリーミング音声合成でのみ利用)
+- [x] voicevox_synthesizer_create_audio_feature(0.17.1以降)
+- [x] voicevox_audio_feature_len(0.17.1以降)
+- [x] voicevox_audio_feature_slice(0.17.1以降)
+- [x] voicevox_synthesizer_render(0.17.1以降)
+- [x] voicevox_audio_feature_delete(0.17.1以降)
+- [ ] voicevox_json_free(0.17.0まで。メタ情報などJSONを返す系統に着手したら必要)
 - [ ] voicevox_onnxruntime_create_supported_devices_json
 - [ ] voicevox_synthesizer_create_accent_phrases(_from_kana)
-- [ ] voicevox_synthesizer_create_audio_query(_from_kana)
+- [ ] voicevox_synthesizer_create_audio_query_from_kana
 - [ ] voicevox_synthesizer_create_metas_json / voicevox_voice_model_file_create_metas_json
 - [ ] voicevox_synthesizer_get_onnxruntime
 - [ ] voicevox_synthesizer_is_gpu_mode
