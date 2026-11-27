@@ -88,26 +88,27 @@ func (s *Synthesizer) LoadAllModels() (err error) {
 }
 
 // Tts synthesizes text as the given style, returning a WAV stream the
-// caller must Close.
-func (s *Synthesizer) Tts(text string, styleID StyleId) (io.ReadCloser, error) {
-	return s.inner.Tts(text, uint32(styleID))
+// caller must Close. opts adjust the speed, pitch and so on; see
+// TtsOption.
+func (s *Synthesizer) Tts(text string, styleID StyleId, opts ...TtsOption) (io.ReadCloser, error) {
+	return s.inner.Tts(text, uint32(styleID), newParams(opts))
 }
 
 // TtsStream synthesizes text like Tts, but renders the audio a little at a
 // time (about 0.3 seconds per chunk) as the returned WAV stream is read,
 // so playback can start before the whole utterance is synthesized. The
-// stream yields the WAV header first, then PCM.
+// stream yields the WAV header first, then PCM. opts are the same as Tts's.
 //
 // It requires voicevox_core 0.17.1 or later, and returns
 // ErrStreamingUnsupported otherwise. The voice model must also be in VVM
 // format version 2; an older model makes it fail with voicevox_core's own
 // error. The stream must be closed before s.
-func (s *Synthesizer) TtsStream(text string, styleID StyleId) (io.ReadCloser, error) {
+func (s *Synthesizer) TtsStream(text string, styleID StyleId, opts ...TtsOption) (io.ReadCloser, error) {
 	ss, ok := s.inner.(core.StreamingSynthesizer)
 	if !ok || !ss.SupportsStreaming() {
 		return nil, ErrStreamingUnsupported
 	}
-	return ss.TtsStream(text, uint32(styleID))
+	return ss.TtsStream(text, uint32(styleID), newParams(opts))
 }
 
 // Close releases every native resource this Synthesizer owns.

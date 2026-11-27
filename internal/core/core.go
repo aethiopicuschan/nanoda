@@ -4,6 +4,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/aethiopicuschan/nanoda/v2/internal/audioquery"
 	"github.com/aethiopicuschan/nanoda/v2/internal/core/core_0_16_0"
 	"github.com/aethiopicuschan/nanoda/v2/internal/core/core_0_17_0"
 	"github.com/aethiopicuschan/nanoda/v2/internal/core/minimum"
@@ -32,9 +33,9 @@ type Core interface {
 type Synthesizer interface {
 	// LoadVoiceModel loads a single .vvm file into the synthesizer.
 	LoadVoiceModel(vvmPath string) error
-	// Tts synthesizes text as the given style, returning a WAV stream the
-	// caller must Close.
-	Tts(text string, styleID uint32) (io.ReadCloser, error)
+	// Tts synthesizes text as the given style with params applied to its
+	// AudioQuery, returning a WAV stream the caller must Close.
+	Tts(text string, styleID uint32, params audioquery.Params) (io.ReadCloser, error)
 	// Close releases every native resource this Synthesizer owns.
 	Close()
 }
@@ -48,7 +49,7 @@ type StreamingSynthesizer interface {
 	SupportsStreaming() bool
 	// TtsStream is Tts, rendered lazily as the returned WAV stream is
 	// read. The stream must be closed before the Synthesizer.
-	TtsStream(text string, styleID uint32) (io.ReadCloser, error)
+	TtsStream(text string, styleID uint32, params audioquery.Params) (io.ReadCloser, error)
 }
 
 // core016Adapter adapts *core_0_16_0.Core to the Core interface.
