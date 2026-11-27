@@ -35,8 +35,9 @@
 // separate package. Its additions are probed with open.HasSymbol and
 // registered only when present (see New):
 //
-//   - voicevox_bytes_free replaces voicevox_wav_free, which still exists
-//     but logs a deprecation warning on every call.
+//   - voicevox_bytes_free and voicevox_string_free replace
+//     voicevox_wav_free and voicevox_json_free, which still exist but log a
+//     deprecation warning on every call.
 //   - voicevox_synthesizer_create_audio_feature/voicevox_synthesizer_render
 //     and friends enable streaming synthesis (see stream.go).
 //
@@ -84,20 +85,25 @@ type Core struct {
 
 	onnxruntimeFuncs
 
-	voicevoxGetVersion                func() string
-	voicevoxOpenJtalkRcNew            func(string, *uintptr) int32
-	voicevoxOpenJtalkRcDelete         func(uintptr)
-	voicevoxSynthesizerNew            func(uintptr, uintptr, uintptr, *uintptr) int32
-	voicevoxSynthesizerDelete         func(uintptr)
-	voicevoxVoiceModelFileOpen        func(string, *uintptr) int32
-	voicevoxVoiceModelFileDelete      func(uintptr)
-	voicevoxSynthesizerLoadVoiceModel func(uintptr, uintptr, uintptr) int32
-	voicevoxSynthesizerTts            func(uintptr, string, uint32, uintptr, *uintptr, **byte) int32
-	voicevoxErrorResultToMessage      func(int32) string
+	voicevoxGetVersion                  func() string
+	voicevoxOpenJtalkRcNew              func(string, *uintptr) int32
+	voicevoxOpenJtalkRcDelete           func(uintptr)
+	voicevoxSynthesizerNew              func(uintptr, uintptr, uintptr, *uintptr) int32
+	voicevoxSynthesizerDelete           func(uintptr)
+	voicevoxVoiceModelFileOpen          func(string, *uintptr) int32
+	voicevoxVoiceModelFileDelete        func(uintptr)
+	voicevoxSynthesizerLoadVoiceModel   func(uintptr, uintptr, uintptr) int32
+	voicevoxSynthesizerTts              func(uintptr, string, uint32, uintptr, *uintptr, **byte) int32
+	voicevoxSynthesizerCreateAudioQuery func(uintptr, string, uint32, **byte) int32
+	voicevoxSynthesizerSynthesis        func(uintptr, string, uint32, uintptr, *uintptr, **byte) int32
+	voicevoxErrorResultToMessage        func(int32) string
 
 	// bytesFree is voicevox_bytes_free on 0.17.1+ and voicevox_wav_free
 	// before it.
 	bytesFree func(uintptr)
+	// stringFree is voicevox_string_free on 0.17.1+ and voicevox_json_free
+	// before it.
+	stringFree func(uintptr)
 
 	streamingFuncs
 }
@@ -109,8 +115,6 @@ type Core struct {
 type streamingFuncs struct {
 	supportsStreaming bool
 
-	voicevoxSynthesizerCreateAudioQuery   func(uintptr, string, uint32, **byte) int32
-	voicevoxStringFree                    func(uintptr)
 	voicevoxSynthesizerCreateAudioFeature func(uintptr, string, uint32, uintptr, *uintptr) int32
 	voicevoxAudioFeatureLen               func(uintptr) uintptr
 	voicevoxAudioFeatureSlice             func(uintptr, uintptr, uintptr, bool, bool, bool, *audioFeatureSlice) int32
@@ -137,11 +141,18 @@ func New(core uintptr) (c *Core) {
 	purego.RegisterLibFunc(&c.voicevoxVoiceModelFileDelete, c.core, "voicevox_voice_model_file_delete")
 	purego.RegisterLibFunc(&c.voicevoxSynthesizerLoadVoiceModel, c.core, "voicevox_synthesizer_load_voice_model")
 	purego.RegisterLibFunc(&c.voicevoxSynthesizerTts, c.core, "voicevox_synthesizer_tts")
+	purego.RegisterLibFunc(&c.voicevoxSynthesizerCreateAudioQuery, c.core, "voicevox_synthesizer_create_audio_query")
+	purego.RegisterLibFunc(&c.voicevoxSynthesizerSynthesis, c.core, "voicevox_synthesizer_synthesis")
 	purego.RegisterLibFunc(&c.voicevoxErrorResultToMessage, c.core, "voicevox_error_result_to_message")
 	if open.HasSymbol(c.core, "voicevox_bytes_free") {
 		purego.RegisterLibFunc(&c.bytesFree, c.core, "voicevox_bytes_free")
 	} else {
 		purego.RegisterLibFunc(&c.bytesFree, c.core, "voicevox_wav_free")
+	}
+	if open.HasSymbol(c.core, "voicevox_string_free") {
+		purego.RegisterLibFunc(&c.stringFree, c.core, "voicevox_string_free")
+	} else {
+		purego.RegisterLibFunc(&c.stringFree, c.core, "voicevox_json_free")
 	}
 	if open.HasSymbol(c.core, "voicevox_synthesizer_render") {
 		c.registerStreaming()
@@ -150,8 +161,6 @@ func New(core uintptr) (c *Core) {
 }
 
 func (c *Core) registerStreaming() {
-	purego.RegisterLibFunc(&c.voicevoxSynthesizerCreateAudioQuery, c.core, "voicevox_synthesizer_create_audio_query")
-	purego.RegisterLibFunc(&c.voicevoxStringFree, c.core, "voicevox_string_free")
 	purego.RegisterLibFunc(&c.voicevoxSynthesizerCreateAudioFeature, c.core, "voicevox_synthesizer_create_audio_feature")
 	purego.RegisterLibFunc(&c.voicevoxAudioFeatureLen, c.core, "voicevox_audio_feature_len")
 	purego.RegisterLibFunc(&c.voicevoxAudioFeatureSlice, c.core, "voicevox_audio_feature_slice")

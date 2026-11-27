@@ -8,7 +8,7 @@ import (
 	"io"
 	"unsafe"
 
-	"github.com/aethiopicuschan/nanoda/v2/internal/strings"
+	"github.com/aethiopicuschan/nanoda/v2/internal/audioquery"
 )
 
 const (
@@ -33,12 +33,6 @@ type audioFeatureSlice struct {
 	allowStartExceedsEnd bool
 }
 
-// synthesisOptions mirrors VoicevoxSynthesisOptions (a single bool, 1
-// byte).
-type synthesisOptions struct {
-	enableInterrogativeUpspeak bool
-}
-
 // SupportsStreaming reports whether the loaded library has the 0.17.1+
 // functions TtsStream needs.
 func (s *Synthesizer) SupportsStreaming() bool {
@@ -49,19 +43,15 @@ func (s *Synthesizer) SupportsStreaming() bool {
 // returned WAV stream is read: the 44-byte header comes first, then each
 // Read that runs out of buffered PCM renders the next segmentFrames
 // frames. The stream must be closed before the Synthesizer.
-func (s *Synthesizer) TtsStream(text string, styleID uint32) (io.ReadCloser, error) {
+func (s *Synthesizer) TtsStream(text string, styleID uint32, params audioquery.Params) (io.ReadCloser, error) {
 	if !s.c.supportsStreaming {
 		return nil, errors.New("nanoda: streaming synthesis requires voicevox_core 0.17.1 or later")
 	}
 
-	var queryPtr *byte
-	if code := s.c.voicevoxSynthesizerCreateAudioQuery(s.synthesizer, text, styleID, &queryPtr); code != 0 {
-		return nil, s.c.newError("synthesizer_create_audio_query", code)
+	query, err := s.createAudioQuery(text, styleID, params)
+	if err != nil {
+		return nil, err
 	}
-	defer s.c.voicevoxStringFree(uintptr(unsafe.Pointer(queryPtr)))
-	// Aliases the library's buffer, so it must not be used after the
-	// deferred free above.
-	query := strings.GoString(queryPtr)
 
 	var format struct {
 		OutputSamplingRate uint32 `json:"outputSamplingRate"`

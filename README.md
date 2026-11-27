@@ -36,6 +36,19 @@ defer f.Close()
 io.Copy(f, wav)
 ```
 
+`Tts` と `TtsStream` には、話速・音高・抑揚などを調整するオプションを渡せます。指定しなかった項目は、VOICEVOX COREがテキストとスタイルから決めた値のままになります。
+
+```go
+wav, err := s.Tts("ずんだもんなのだ！", 3,
+	nanoda.WithSpeedScale(1.2),        // 話速。1が標準で、大きいほど速い。0以下はエラー
+	nanoda.WithPitchScale(0.05),       // 音高。0が標準で、正の値ほど高い
+	nanoda.WithIntonationScale(1.5),   // 抑揚。1が標準で、0だと平坦になる
+	nanoda.WithVolumeScale(0.8),       // 音量。1が標準
+	nanoda.WithPrePhonemeLength(0.2),  // 文頭の無音(秒)
+	nanoda.WithPostPhonemeLength(0.2), // 文末の無音(秒)
+)
+```
+
 `TtsStream` を使うと、合成を少しずつ(約0.3秒ずつ)進めながら読み出せるため、全体の合成を待たずに再生を始められます。返されるストリームはWAVヘッダの後にPCMが続く形式で、`Synthesizer` を `Close` する前に `Close` してください。
 
 ```go
@@ -92,17 +105,17 @@ TODOです。ありません。
 - [x] voicevox_synthesizer_delete
 - [x] voicevox_synthesizer_load_voice_model
 - [x] voicevox_synthesizer_tts
+- [x] voicevox_synthesizer_create_audio_query(話速などのオプションとストリーミング音声合成で利用)
+- [x] voicevox_synthesizer_synthesis(話速などのオプションを指定したときに利用)
 - [x] voicevox_voice_model_file_open
 - [x] voicevox_voice_model_file_delete
 - [x] voicevox_wav_free(0.17.0まで)/ voicevox_bytes_free(0.17.1以降)
-- [x] voicevox_string_free(0.17.1以降。ストリーミング音声合成でのみ利用)
-- [x] voicevox_synthesizer_create_audio_query(0.17.1以降。ストリーミング音声合成でのみ利用)
+- [x] voicevox_json_free(0.17.0まで)/ voicevox_string_free(0.17.1以降)
 - [x] voicevox_synthesizer_create_audio_feature(0.17.1以降)
 - [x] voicevox_audio_feature_len(0.17.1以降)
 - [x] voicevox_audio_feature_slice(0.17.1以降)
 - [x] voicevox_synthesizer_render(0.17.1以降)
 - [x] voicevox_audio_feature_delete(0.17.1以降)
-- [ ] voicevox_json_free(0.17.0まで。メタ情報などJSONを返す系統に着手したら必要)
 - [ ] voicevox_onnxruntime_create_supported_devices_json
 - [ ] voicevox_synthesizer_create_accent_phrases(_from_kana)
 - [ ] voicevox_synthesizer_create_audio_query_from_kana
@@ -111,7 +124,6 @@ TODOです。ありません。
 - [ ] voicevox_synthesizer_is_gpu_mode
 - [ ] voicevox_synthesizer_is_loaded_voice_model
 - [ ] voicevox_synthesizer_replace_mora_data / replace_mora_pitch / replace_phoneme_length
-- [ ] voicevox_synthesizer_synthesis (AudioQueryからの合成)
 - [ ] voicevox_synthesizer_tts_from_kana
 - [ ] voicevox_synthesizer_unload_voice_model
 - [ ] voicevox_user_dict_*(全般)

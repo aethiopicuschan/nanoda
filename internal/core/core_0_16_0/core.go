@@ -42,17 +42,20 @@ type Core struct {
 
 	onnxruntimeFuncs
 
-	voicevoxGetVersion                func() string
-	voicevoxOpenJtalkRcNew            func(string, *uintptr) int32
-	voicevoxOpenJtalkRcDelete         func(uintptr)
-	voicevoxSynthesizerNew            func(uintptr, uintptr, uintptr, *uintptr) int32
-	voicevoxSynthesizerDelete         func(uintptr)
-	voicevoxVoiceModelFileOpen        func(string, *uintptr) int32
-	voicevoxVoiceModelFileDelete      func(uintptr)
-	voicevoxSynthesizerLoadVoiceModel func(uintptr, uintptr) int32
-	voicevoxSynthesizerTts            func(uintptr, string, uint32, uintptr, *uintptr, **byte) int32
-	voicevoxWavFree                   func(uintptr)
-	voicevoxErrorResultToMessage      func(int32) string
+	voicevoxGetVersion                  func() string
+	voicevoxOpenJtalkRcNew              func(string, *uintptr) int32
+	voicevoxOpenJtalkRcDelete           func(uintptr)
+	voicevoxSynthesizerNew              func(uintptr, uintptr, uintptr, *uintptr) int32
+	voicevoxSynthesizerDelete           func(uintptr)
+	voicevoxVoiceModelFileOpen          func(string, *uintptr) int32
+	voicevoxVoiceModelFileDelete        func(uintptr)
+	voicevoxSynthesizerLoadVoiceModel   func(uintptr, uintptr) int32
+	voicevoxSynthesizerTts              func(uintptr, string, uint32, uintptr, *uintptr, **byte) int32
+	voicevoxSynthesizerCreateAudioQuery func(uintptr, string, uint32, **byte) int32
+	voicevoxSynthesizerSynthesis        func(uintptr, string, uint32, uintptr, *uintptr, **byte) int32
+	voicevoxWavFree                     func(uintptr)
+	voicevoxJsonFree                    func(uintptr)
+	voicevoxErrorResultToMessage        func(int32) string
 }
 
 // New wires up every function this package needs from the already-loaded
@@ -74,7 +77,10 @@ func New(core uintptr) (c *Core) {
 	purego.RegisterLibFunc(&c.voicevoxVoiceModelFileDelete, c.core, "voicevox_voice_model_file_delete")
 	purego.RegisterLibFunc(&c.voicevoxSynthesizerLoadVoiceModel, c.core, "voicevox_synthesizer_load_voice_model")
 	purego.RegisterLibFunc(&c.voicevoxSynthesizerTts, c.core, "voicevox_synthesizer_tts")
+	purego.RegisterLibFunc(&c.voicevoxSynthesizerCreateAudioQuery, c.core, "voicevox_synthesizer_create_audio_query")
+	purego.RegisterLibFunc(&c.voicevoxSynthesizerSynthesis, c.core, "voicevox_synthesizer_synthesis")
 	purego.RegisterLibFunc(&c.voicevoxWavFree, c.core, "voicevox_wav_free")
+	purego.RegisterLibFunc(&c.voicevoxJsonFree, c.core, "voicevox_json_free")
 	purego.RegisterLibFunc(&c.voicevoxErrorResultToMessage, c.core, "voicevox_error_result_to_message")
 	return
 }
